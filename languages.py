@@ -65,6 +65,13 @@ _TRANSLATIONS = {
         Languages.DE: "",
     },
 
+    "add_row_button": {
+        Languages.EN: "Add a row",
+        Languages.FR: "",
+        Languages.IT: "",
+        Languages.DE: "",
+    },
+
     "comparison": {
         Languages.EN: "Comparison of the Offers",
         Languages.FR: "",

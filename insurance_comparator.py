@@ -140,7 +140,7 @@ def _insurance_params_section(df):
                 df = df.loc[df.index != idx]
 
     # Display button to add a row.
-    if st.button("Add a row", icon = "➕", key = f"Button to add a row", disabled = len(df) >= MAX_CHOICES):
+    if st.button(languages.get_text("add_row_button"), icon = "➕", key = f"Button to add a row", disabled = len(df) >= MAX_CHOICES):
         new_row = df.iloc[-1:].copy()
         new_row["label"] = f"Option {len(df) + 1}"
         df = pd.concat([df, new_row], axis = "index", ignore_index = True)
@@ -231,7 +231,7 @@ if __name__ == "__main__":
         st.rerun()
 
     st.write("### " + languages.get_text("comparison"))
-    if st.button(languages.get_text("compare_button")+ " 🚀", disabled = not entries_ok):
+    if st.button(languages.get_text("compare_button"), icon = "🚀", disabled = not entries_ok):
         st.session_state["button_pressed"] = True
 
     if st.session_state["button_pressed"]:

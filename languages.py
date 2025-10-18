@@ -85,7 +85,6 @@ _current_language = Languages.EN
 
 
 def get_text(string):
-    print(_current_language.name)
     return _TRANSLATIONS[string][_current_language]
 
 
@@ -99,7 +98,6 @@ def set_lang(language):
     if language not in Languages:
         raise ValueError(f"Programming error: unrecognized value for language selected: {language}")
 
-    print("setting to", language.name)
     _current_language = language
 
 

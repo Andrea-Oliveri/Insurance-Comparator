@@ -106,5 +106,5 @@ def _check_translations():
     for _, translations in _TRANSLATIONS.items():
         for language in Languages:
             if language not in translations or translations[language].strip() == "":
-                raise RuntimeError(f"Missing translations were detected.")
+                raise RuntimeError(f"Programming error: missing translations were detected.")
 #_check_translations()

@@ -1,4 +1,5 @@
 from itertools import combinations
+from functools import partial
 
 import streamlit as st
 import pandas as pd
@@ -9,7 +10,9 @@ import languages
 
 
 MAX_CHOICES = 50
-
+MAX_TEXT_INPUTS_LEN = 20
+MIN_NUM_INPUTS_VALUE = 0
+MAX_NUM_INPUTS_VALUE = 5000
 
 
 def _set_page_config(title, icon):
@@ -67,7 +70,6 @@ def _choose_language():
         st.rerun()
 
 
-
 def _get_example_dataframe():
     return pd.DataFrame([
         {"label": f"Option 1", "cost_per_month": 500, "deducible": 300 , "excess": 700},
@@ -75,11 +77,68 @@ def _get_example_dataframe():
     ])
 
 
-def _check_insurance_params(df):
+def _insurance_params_section(df):
+    st.write("### " + languages.get_text("insurance_parameters"))
+
+    # Ensure index of df are unique. It is important later in for loop.
+    df = df.reset_index(drop = True)
+
+    # Set up mappings to help with later for loop.
+    colnames_to_translation_text = {"label"         : "label",
+                                    "cost_per_month": "cost_per_month",
+                                    "deducible"     : "deducible",
+                                    "excess"        : "excess"}
+    if set(colnames_to_translation_text.keys()) != set(df.columns):
+        raise RuntimeError(f"Programming error: the provided dataframe does not have the expected column names: {df.columns}.")
+
+    colnames_to_dtypes = {"label"         : "text",
+                          "cost_per_month": "number",
+                          "deducible"     : "number",
+                          "excess"        : "number"}
+    missing_keys = set(colnames_to_dtypes.keys()) - set(df.columns)
+    if missing_keys:
+        raise RuntimeError(f"Programming error: variable colnames_to_dtypes has some missing keys: {missing_keys}.")
+
+    # Create streamlit columns, accounting for the fact we want an extra one compared to what is in the dataframe to put a button
+    # that deletes the row.
+    col_names = list(df.columns) + ["delete_button"]
+    col_sizes = [1] * len(df.columns) + [0.3]
+    if len(col_names) != len(col_sizes):
+        raise RuntimeError(f"Programming error: something changed and the lenghts don't match...")
+    columns = dict(zip(col_names, st.columns(col_sizes)))
+    del col_names, col_sizes
+
+    # Display all values of the dataframe and allow updating.
+    for col_name in df.columns:
+        with columns[col_name]:
+            st.write("**" + languages.get_text(colnames_to_translation_text[col_name]) + "**")
+
+            widget_factory = None
+            if colnames_to_dtypes[col_name] == "text":
+                widget_factory = partial(st.text_input,
+                                         max_chars = MAX_TEXT_INPUTS_LEN,
+                                         type = "default",
+                                         autocomplete = "off",
+                                         label_visibility = "collapsed")
+            elif colnames_to_dtypes[col_name] == "number":
+                widget_factory = partial(st.number_input,
+                                         min_value = MIN_NUM_INPUTS_VALUE,
+                                         max_value = MAX_NUM_INPUTS_VALUE,
+                                         label_visibility = "collapsed")
+            else:
+                raise RuntimeError(f"Programming error: unhandled data type {colnames_to_dtypes[col_name]}...")
+
+            for idx in df.index:
+                df.loc[idx, col_name] = widget_factory(label = f"Entry {idx}, col {col_name}",
+                                                       value = df.loc[idx, col_name])
+
+
+    # It should not be possible for a user to leave a numerical value blank since number_input will re-fill it with previous value.
+    # Nonetheless, a small chack shouldn't hurt.
     if df[["cost_per_month", "deducible", "excess"]].isna().any(axis = None):
         st.error(languages.get_text("error_required_cols"), icon = "🚨")
-        return False
-    return True
+
+    return df
 
 
 
@@ -134,16 +193,17 @@ if __name__ == "__main__":
     st.write(languages.get_text("decription"))
 
     st.session_state["choices"] = st.session_state.get("choices", _get_example_dataframe())
-    st.session_state["button_pressed"] = st.session_state.get("button_pressed", False)
 
-    st.write("### " + languages.get_text("insurance_parameters"))
-    st.session_state["choices"] = st.data_editor(
-        st.session_state["choices"],
-        hide_index = True,
-        num_rows   = "dynamic" if len(st.session_state["choices"]) < MAX_CHOICES else "fixed",
-        disabled   = False,
-        on_change  = lambda: st.session_state.__setitem__("button_pressed", False)
-    )
+    # Create section to edit choices dataframe. Also need to handle Streamlit not updating frontend
+    # if values are changed from session_state after the widget was rendered. This is done with a rerun
+    # if a change is detected.
+    df_old = st.session_state["choices"]
+    df_new = _insurance_params_section(df_old)
+    if not df_old.equals(df_new):
+        st.session_state["choices"] = df_new
+        st.session_state["button_pressed"] = False
+        st.rerun()
+
 
     if st.button(languages.get_text("compare_button")+ " 🚀"):
         st.session_state["button_pressed"] = _check_insurance_params(st.session_state["choices"])

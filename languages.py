@@ -100,12 +100,48 @@ _TRANSLATIONS = {
         Languages.DE: "",
     },
 
-    "error_n_choices_out_of_range": {
-        Languages.EN: "You have too many/too little choices to run the calculation. Must be within {} and {}.",
+    "colname_spend_per_year": {
+        Languages.EN: "If you spend, in CHF per year",
         Languages.FR: "",
         Languages.IT: "",
         Languages.DE: "",
     },
+
+    "health_expenses_range_between": {
+        Languages.EN: "Between {} and {}",
+        Languages.FR: "",
+        Languages.IT: "",
+        Languages.DE: "",
+    },
+
+    "health_expenses_range_over": {
+        Languages.EN: "Over {}",
+        Languages.FR: "",
+        Languages.IT: "",
+        Languages.DE: "",
+    },
+
+    "colname_1st_cheapest": {
+        Languages.EN: "Cheapest",
+        Languages.FR: "",
+        Languages.IT: "",
+        Languages.DE: "",
+    },
+
+    "colname_2nd_cheapest": {
+        Languages.EN: "2nd Cheapest",
+        Languages.FR: "",
+        Languages.IT: "",
+        Languages.DE: "",
+    },
+
+    "colname_3rd_cheapest": {
+        Languages.EN: "3rd Cheapest",
+        Languages.FR: "",
+        Languages.IT: "",
+        Languages.DE: "",
+    },
+
 }
 
 

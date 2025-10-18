@@ -3,6 +3,7 @@ from functools import partial
 
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.express as px
 
 import languages
@@ -167,34 +168,38 @@ def _insurance_params_section(df):
     return df, entries_ok
 
 
-def _make_df_points(df):
+def _make_df_points(df, mergin_right_ratio = 0.15):
     df_points = []
     for _, row in df.iterrows():
         cost_per_year = 12 * row["cost_per_month"]
         df_points.append({'label': row['label'], 'health_expenses': 0                                        , 'money_to_insurance': cost_per_year})
         df_points.append({'label': row['label'], 'health_expenses': 0 + row["deducible"]                     , 'money_to_insurance': cost_per_year + row["deducible"]})
         df_points.append({'label': row['label'], 'health_expenses': 0 + row["deducible"] + row["excess"] * 10, 'money_to_insurance': cost_per_year + row["deducible"] + row["excess"]})
-        df_points.append({'label': row['label'], 'health_expenses': float("inf")                             , 'money_to_insurance': cost_per_year + row["deducible"] + row["excess"]})
-    return pd.DataFrame(df_points)
+        df_points.append({'label': row['label'], 'health_expenses': np.inf                                   , 'money_to_insurance': cost_per_year + row["deducible"] + row["excess"]})
+    df_points = pd.DataFrame(df_points)
+
+    # Replace infinites with finite larger than all other points.
+    mask = np.isfinite(df_points['health_expenses'])
+    right_lim = (1 + mergin_right_ratio) * df_points.loc[mask, 'health_expenses'].max()
+    df_points.loc[~mask, 'health_expenses'] = right_lim
+
+    return df_points
 
 
-def _make_df_lines(df_points):
-    x = "health_expenses"
-    y = "money_to_insurance"
-
+def _make_df_lines(df_points, x_col = "health_expenses", y_col = "money_to_insurance"):
     df_lines = []
-    for label, rows in df_points.sort_values(x).groupby("label"):
+    for label, rows in df_points.sort_values(x_col).groupby("label"):
         for idx in range(len(rows) - 1):
             start_point = rows.iloc[idx]
             end_point   = rows.iloc[idx + 1]
-            slope       = (end_point[y] - start_point[y]) / (end_point[x] - start_point[x])
-            intercept   = start_point[y] - slope * start_point[x]
-            df_lines.append({"label": label, "slope": slope, "intercept": intercept, "x_min": start_point[x], "x_max": end_point[x]})
+            slope       = (end_point[y_col] - start_point[y_col]) / (end_point[x_col] - start_point[x_col])
+            intercept   = start_point[y_col] - slope * start_point[x_col]
+            df_lines.append({"label": label, "slope": slope, "intercept": intercept, "x_min": start_point[x_col], "x_max": end_point[x_col]})
     return pd.DataFrame(df_lines)
 
 
 def _make_intersections(df_lines):
-    intersections = []
+    intersections = set()
     for label1, label2 in combinations(df_lines["label"].unique(), 2):
         for _, line1 in df_lines[df_lines["label"] == label1].iterrows():
             for _, line2 in df_lines[df_lines["label"] == label2].iterrows():
@@ -203,17 +208,52 @@ def _make_intersections(df_lines):
                 x_inter = (line2["intercept"] - line1["intercept"]) / (line1["slope"] - line2["slope"])
                 if x_inter < line1["x_min"] or x_inter < line2["x_min"] or x_inter > line1["x_max"] or x_inter > line2["x_max"]:
                     continue
-                intersections.append(x_inter)
-    return intersections
+                intersections.add(x_inter)
+    return sorted(intersections)
 
 
+def _draw_comparison_table(df_lines, intersections):
+    unique_labels = df_lines["label"].unique()
+
+    df_comparison = []
+    for idx in range(len(intersections) + 1):
+        range_start = 0      if idx == 0                  else intersections[idx - 1]
+        range_end   = np.inf if idx == len(intersections) else intersections[idx]
+        middle      = (range_start + range_end) / 2 if np.isfinite(range_end) else range_start + 1000
+
+        # Sort functions by which is smallest in the range.
+        sorted_idx = np.argsort([_get_y_at_x(df_lines, label, x = middle) for label in unique_labels])
+
+        # Store the 3 cheapest options.
+        range_text = languages.get_text("health_expenses_range_between").format(round(range_start), round(range_end)) if np.isfinite(range_end) else \
+                     languages.get_text("health_expenses_range_over")   .format(round(range_start))
+        df_comparison.append({
+            languages.get_text("colname_spend_per_year"): range_text,
+            "🥇 " + languages.get_text("colname_1st_cheapest"): unique_labels[sorted_idx[0]],
+            "🥈 " + languages.get_text("colname_2nd_cheapest"): unique_labels[sorted_idx[1]],
+            "🥉 " + languages.get_text("colname_3rd_cheapest"): None if len(sorted_idx) < 3 else unique_labels[sorted_idx[2]]
+        })
+
+    # Display the cheapest options, ranked.
+    df_comparison = pd.DataFrame(df_comparison)
+    df_comparison.columns = [f"**{e}**" for e in df_comparison.columns]
+    df_comparison = df_comparison.set_index(df_comparison.columns[0], drop = True)
+    st.table(df_comparison)
+
+
+def _get_y_at_x(df_lines, label, x):
+    line = df_lines[(df_lines["label"] == label) & (df_lines["x_min"] <= x) & (df_lines["x_max"] > x)]
+    if len(line) != 1:
+        raise RuntimeError(f"Programming error: {len(line)} different segments match the requested x...")
+    line = line.iloc[0]
+    return line["slope"] * x + line["intercept"]
 
 
 
 if __name__ == "__main__":
     _choose_language()
 
-    _set_page_config(languages.get_text("title"), "💸")
+    _set_page_config(languages.get_text("title"), icon = "💸")
 
     st.title(languages.get_text("title"))
     st.write(languages.get_text("decription"))
@@ -241,7 +281,28 @@ if __name__ == "__main__":
         df_lines      = _make_df_lines(df_points)
         intersections = _make_intersections(df_lines)
 
+        _draw_comparison_table(df_lines, intersections)
+
+
+
+
+
+
+
+
+
+
+
+        new_rows = []
+        for x in np.arange(0, df_points["health_expenses"].max(), 10):
+            for label, df_label in df_points.groupby("label"):
+                if x in df_label["health_expenses"]:
+                    continue
+                new_rows.append({"label": label, "health_expenses": x, "money_to_insurance": _get_y_at_x(df_lines, label, x)})
+        df_points = pd.concat([df_points, pd.DataFrame(new_rows)], axis = "index", ignore_index = True).sort_values(["label", "health_expenses"])
+
         fig = px.line(df_points, x = "health_expenses", y = "money_to_insurance", color = "label")
         for x_inter in intersections:
             fig.add_vline(x = x_inter, line_dash = "dot")
+        fig.update_layout(hovermode = "x unified")
         st.plotly_chart(fig)

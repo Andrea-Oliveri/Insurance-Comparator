@@ -65,6 +65,13 @@ _TRANSLATIONS = {
         Languages.DE: "",
     },
 
+    "comparison": {
+        Languages.EN: "Comparison of the Offers",
+        Languages.FR: "",
+        Languages.IT: "",
+        Languages.DE: "",
+    },
+
     "compare_button": {
         Languages.EN: "Compare",
         Languages.FR: "",
@@ -72,8 +79,22 @@ _TRANSLATIONS = {
         Languages.DE: "",
     },
 
+    "error_duplicate_labels": {
+        Languages.EN: "Some of your options have the same label: {}. Please change that before starting the comparison.",
+        Languages.FR: "",
+        Languages.IT: "",
+        Languages.DE: "",
+    },
+
     "error_required_cols": {
-        Languages.EN: "Please fill out all values in columns 'Cost per Month', 'Deducible' and 'Excess'",
+        Languages.EN: "Please fill out all values in columns 'Cost per Month', 'Deducible' and 'Excess'.",
+        Languages.FR: "",
+        Languages.IT: "",
+        Languages.DE: "",
+    },
+
+    "error_n_choices_out_of_range": {
+        Languages.EN: "You have too many/too little choices to run the calculation. Must be within {} and {}.",
         Languages.FR: "",
         Languages.IT: "",
         Languages.DE: "",

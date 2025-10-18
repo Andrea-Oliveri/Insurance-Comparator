@@ -9,7 +9,8 @@ import languages
 
 
 
-MAX_CHOICES = 50
+MIN_CHOICES = 2
+MAX_CHOICES = 10
 MAX_TEXT_INPUTS_LEN = 20
 MIN_NUM_INPUTS_VALUE = 0
 MAX_NUM_INPUTS_VALUE = 5000
@@ -102,10 +103,10 @@ def _insurance_params_section(df):
     # Create streamlit columns, accounting for the fact we want an extra one compared to what is in the dataframe to put a button
     # that deletes the row.
     col_names = list(df.columns) + ["delete_button"]
-    col_sizes = [1] * len(df.columns) + [0.3]
+    col_sizes = [1] * len(df.columns) + [0.5]
     if len(col_names) != len(col_sizes):
         raise RuntimeError(f"Programming error: something changed and the lenghts don't match...")
-    columns = dict(zip(col_names, st.columns(col_sizes)))
+    columns = dict(zip(col_names, st.columns(col_sizes, vertical_alignment = "bottom")))
     del col_names, col_sizes
 
     # Display all values of the dataframe and allow updating.
@@ -116,14 +117,14 @@ def _insurance_params_section(df):
             widget_factory = None
             if colnames_to_dtypes[col_name] == "text":
                 widget_factory = partial(st.text_input,
-                                         max_chars = MAX_TEXT_INPUTS_LEN,
-                                         type = "default",
-                                         autocomplete = "off",
+                                         max_chars        = MAX_TEXT_INPUTS_LEN,
+                                         type             = "default",
+                                         autocomplete     = "off",
                                          label_visibility = "collapsed")
             elif colnames_to_dtypes[col_name] == "number":
                 widget_factory = partial(st.number_input,
-                                         min_value = MIN_NUM_INPUTS_VALUE,
-                                         max_value = MAX_NUM_INPUTS_VALUE,
+                                         min_value        = MIN_NUM_INPUTS_VALUE,
+                                         max_value        = MAX_NUM_INPUTS_VALUE,
                                          label_visibility = "collapsed")
             else:
                 raise RuntimeError(f"Programming error: unhandled data type {colnames_to_dtypes[col_name]}...")
@@ -132,14 +133,38 @@ def _insurance_params_section(df):
                 df.loc[idx, col_name] = widget_factory(label = f"Entry {idx}, col {col_name}",
                                                        value = df.loc[idx, col_name])
 
+    # Display buttons to delete rows.
+    with columns["delete_button"]:
+        for idx in df.index:
+            if st.button(":material/delete:", key = f"Button to delete row {idx}", disabled = len(df) <= MIN_CHOICES):
+                df = df.loc[df.index != idx]
+
+    # Display button to add a row.
+    if st.button("Add a row", icon = "➕", key = f"Button to add a row", disabled = len(df) >= MAX_CHOICES):
+        new_row = df.iloc[-1:].copy()
+        new_row["label"] = f"Option {len(df) + 1}"
+        df = pd.concat([df, new_row], axis = "index", ignore_index = True)
+
+    # Return whether entries are good quality.
+    entries_ok = True
+
+    # Check the labels provided by user are unique.
+    duplicate_labels = ', '.join(df.loc[df["label"].duplicated(), "label"])
+    if duplicate_labels:
+        st.error(languages.get_text("error_duplicate_labels").format(duplicate_labels), icon = "🚨")
+        entries_ok = False
 
     # It should not be possible for a user to leave a numerical value blank since number_input will re-fill it with previous value.
-    # Nonetheless, a small chack shouldn't hurt.
+    # It should also not be possible for a user to have too many or too little lines.
+    # Nonetheless, a small chack won't hurt.
     if df[["cost_per_month", "deducible", "excess"]].isna().any(axis = None):
         st.error(languages.get_text("error_required_cols"), icon = "🚨")
+        entries_ok = False
+    if len(df) < MIN_CHOICES or len(df) > MAX_CHOICES:
+        st.error(languages.get_text("error_n_choices_out_of_range").format(MIN_CHOICES, MAX_CHOICES), icon = "🚨")
+        entries_ok = False
 
-    return df
-
+    return df, entries_ok
 
 
 def _make_df_lines(df):
@@ -192,25 +217,22 @@ if __name__ == "__main__":
     st.title(languages.get_text("title"))
     st.write(languages.get_text("decription"))
 
+    st.session_state["button_pressed"] = st.session_state.get("button_pressed", False)
     st.session_state["choices"] = st.session_state.get("choices", _get_example_dataframe())
 
     # Create section to edit choices dataframe. Also need to handle Streamlit not updating frontend
     # if values are changed from session_state after the widget was rendered. This is done with a rerun
     # if a change is detected.
     df_old = st.session_state["choices"]
-    df_new = _insurance_params_section(df_old)
+    df_new, entries_ok = _insurance_params_section(df_old)
     if not df_old.equals(df_new):
         st.session_state["choices"] = df_new
         st.session_state["button_pressed"] = False
         st.rerun()
 
-
-    if st.button(languages.get_text("compare_button")+ " 🚀"):
-        st.session_state["button_pressed"] = _check_insurance_params(st.session_state["choices"])
-        for idx in range(len(st.session_state["choices"])):
-            if pd.isna(st.session_state["choices"].iloc[idx].loc["label"]):
-                st.session_state["choices"].iloc[idx].loc["label"] = f"Option {idx + 1}"
-        st.rerun()
+    st.write("### " + languages.get_text("comparison"))
+    if st.button(languages.get_text("compare_button")+ " 🚀", disabled = not entries_ok):
+        st.session_state["button_pressed"] = True
 
     if st.session_state["button_pressed"]:
         df_lines = _make_df_lines(st.session_state["choices"])

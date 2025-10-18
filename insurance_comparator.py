@@ -167,32 +167,33 @@ def _insurance_params_section(df):
     return df, entries_ok
 
 
-def _make_df_lines(df):
-    df_lines = []
+def _make_df_points(df):
+    df_points = []
     for _, row in df.iterrows():
         cost_per_year = 12 * row["cost_per_month"]
-        df_lines.append({'label': row['label'], 'health_expenses': 0                                        , 'money_to_insurance': cost_per_year})
-        df_lines.append({'label': row['label'], 'health_expenses': 0 + row["deducible"]                     , 'money_to_insurance': cost_per_year + row["deducible"]})
-        df_lines.append({'label': row['label'], 'health_expenses': 0 + row["deducible"] + row["excess"] * 10, 'money_to_insurance': cost_per_year + row["deducible"] + row["excess"]})
-        df_lines.append({'label': row['label'], 'health_expenses': float("inf")                             , 'money_to_insurance': cost_per_year + row["deducible"] + row["excess"]})
-    return pd.DataFrame(df_lines)
+        df_points.append({'label': row['label'], 'health_expenses': 0                                        , 'money_to_insurance': cost_per_year})
+        df_points.append({'label': row['label'], 'health_expenses': 0 + row["deducible"]                     , 'money_to_insurance': cost_per_year + row["deducible"]})
+        df_points.append({'label': row['label'], 'health_expenses': 0 + row["deducible"] + row["excess"] * 10, 'money_to_insurance': cost_per_year + row["deducible"] + row["excess"]})
+        df_points.append({'label': row['label'], 'health_expenses': float("inf")                             , 'money_to_insurance': cost_per_year + row["deducible"] + row["excess"]})
+    return pd.DataFrame(df_points)
 
 
-def _make_intersections(df_lines):
+def _make_df_lines(df_points):
     x = "health_expenses"
     y = "money_to_insurance"
 
-    df_lines_new = []
-    for label, rows in df_lines.sort_values(x).groupby("label"):
+    df_lines = []
+    for label, rows in df_points.sort_values(x).groupby("label"):
         for idx in range(len(rows) - 1):
             start_point = rows.iloc[idx]
             end_point   = rows.iloc[idx + 1]
             slope       = (end_point[y] - start_point[y]) / (end_point[x] - start_point[x])
             intercept   = start_point[y] - slope * start_point[x]
-            df_lines_new.append({"label": label, "slope": slope, "intercept": intercept, "x_min": start_point[x], "x_max": end_point[x]})
-    df_lines = pd.DataFrame(df_lines_new)
-    del df_lines_new, label, rows, idx, start_point, end_point, slope, intercept
+            df_lines.append({"label": label, "slope": slope, "intercept": intercept, "x_min": start_point[x], "x_max": end_point[x]})
+    return pd.DataFrame(df_lines)
 
+
+def _make_intersections(df_lines):
     intersections = []
     for label1, label2 in combinations(df_lines["label"].unique(), 2):
         for _, line1 in df_lines[df_lines["label"] == label1].iterrows():
@@ -229,16 +230,18 @@ if __name__ == "__main__":
         st.session_state["choices"] = df_new
         st.session_state["button_pressed"] = False
         st.rerun()
+    del df_old, df_new
 
     st.write("### " + languages.get_text("comparison"))
     if st.button(languages.get_text("compare_button"), icon = "🚀", disabled = not entries_ok):
         st.session_state["button_pressed"] = True
 
     if st.session_state["button_pressed"]:
-        df_lines = _make_df_lines(st.session_state["choices"])
+        df_points     = _make_df_points(st.session_state["choices"])
+        df_lines      = _make_df_lines(df_points)
         intersections = _make_intersections(df_lines)
 
-        fig = px.line(df_lines, x = "health_expenses", y = "money_to_insurance", color = "label")
+        fig = px.line(df_points, x = "health_expenses", y = "money_to_insurance", color = "label")
         for x_inter in intersections:
             fig.add_vline(x = x_inter, line_dash = "dot")
         st.plotly_chart(fig)

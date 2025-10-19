@@ -13,8 +13,8 @@ import languages
 MIN_CHOICES = 2
 MAX_CHOICES = 10
 MAX_TEXT_INPUTS_LEN = 20
-MIN_NUM_INPUTS_VALUE = 0
-MAX_NUM_INPUTS_VALUE = 5000
+MIN_NUM_INPUTS_VALUE = 0.01
+MAX_NUM_INPUTS_VALUE = 5000.
 PLOT_INTERP_STEP = 20
 
 
@@ -75,8 +75,8 @@ def _choose_language():
 
 def _get_example_dataframe():
     return pd.DataFrame([
-        {"label": f"Option 1", "cost_per_month": 500, "deducible": 300 , "excess": 700},
-        {"label": f"Option 2", "cost_per_month": 400, "deducible": 2500, "excess": 700}
+        {"label": f"Option 1", "cost_per_month": 500., "deducible": 300. , "excess": 700.},
+        {"label": f"Option 2", "cost_per_month": 400., "deducible": 2500., "excess": 700.}
     ])
 
 
@@ -226,23 +226,42 @@ def _draw_comparison_table(df_points, intersections):
         sorted_idx = np.argsort([_get_y_at_x(df_points, label, x = middle) for label in unique_labels])
 
         # Store the 3 cheapest options.
-        range_text = languages.get_text("health_expenses_range_any")                                if range_start == 0 and not np.isfinite(range_end) else \
-                     languages.get_text("health_expenses_range_less")   .format(round(range_end))   if range_start == 0 else \
-                     languages.get_text("health_expenses_range_over")   .format(round(range_start)) if not np.isfinite(range_end) else \
-                     languages.get_text("health_expenses_range_between").format(round(range_start), round(range_end))
-
-        df_comparison.append({
-            languages.get_text("colname_spend_per_year"): range_text,
-            "🥇 " + languages.get_text("colname_1st_cheapest"): unique_labels[sorted_idx[0]],
-            "🥈 " + languages.get_text("colname_2nd_cheapest"): unique_labels[sorted_idx[1]],
-            "🥉 " + languages.get_text("colname_3rd_cheapest"): None if len(sorted_idx) < 3 else unique_labels[sorted_idx[2]]
-        })
-
-    # Display the cheapest options, ranked.
+        df_comparison.append({"start": range_start,
+                              "end"  : range_end,
+                              "1st"  : unique_labels[sorted_idx[0]],
+                              "2nd"  : unique_labels[sorted_idx[1]],
+                              "3rd"  : None if len(sorted_idx) < 3 else unique_labels[sorted_idx[2]]})
     df_comparison = pd.DataFrame(df_comparison)
-    df_comparison.columns = [f"**{e}**" for e in df_comparison.columns]
-    df_comparison = df_comparison.set_index(df_comparison.columns[0], drop = True)
-    st.table(df_comparison)
+
+    # Merge ranges which are adjacent and for which the ranking does not change.
+    columns_order = df_comparison.columns
+    groupby_columns = ["1st", "2nd", "3rd"]
+    groups_consecutive = df_comparison[groupby_columns].ne(df_comparison[groupby_columns].shift()) \
+                                                       .any(axis = "columns") \
+                                                       .cumsum()
+    df_comparison = df_comparison.groupby(groups_consecutive) \
+                                 .agg({"start": "min", "end": "max"} | {e: "first" for e in groupby_columns}) \
+                                 .reset_index()
+    df_comparison = df_comparison[columns_order]
+
+    # Build final nicely formatted dataframe, with translated text.
+    df_final = []
+    for _, row in df_comparison.iterrows():
+        range_text = languages.get_text("health_expenses_range_any")                                 if row["start"] == 0 and not np.isfinite(row["end"]) else \
+                     languages.get_text("health_expenses_range_less")   .format(round(row["end"]))   if row["start"] == 0 else \
+                     languages.get_text("health_expenses_range_over")   .format(round(row["start"])) if not np.isfinite(row["end"]) else \
+                     languages.get_text("health_expenses_range_between").format(round(row["start"]), round(row["end"]))
+
+        df_final.append({
+            languages.get_text("colname_spend_per_year"): range_text,
+            "🥇 " + languages.get_text("colname_1st_cheapest"): row["1st"],
+            "🥈 " + languages.get_text("colname_2nd_cheapest"): row["2nd"],
+            "🥉 " + languages.get_text("colname_3rd_cheapest"): row["3rd"]
+        })
+    df_final = pd.DataFrame(df_final)
+    df_final.columns = [f"**{e}**" for e in df_final.columns]
+    df_final = df_final.set_index(df_final.columns[0], drop = True)
+    st.table(df_final)
 
 
 def _get_y_at_x(df_points, label, x, x_col = "health_expenses", y_col = "money_to_insurance"):

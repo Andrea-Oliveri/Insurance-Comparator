@@ -225,8 +225,11 @@ def _draw_comparison_table(df_lines, intersections):
         sorted_idx = np.argsort([_get_y_at_x(df_lines, label, x = middle) for label in unique_labels])
 
         # Store the 3 cheapest options.
-        range_text = languages.get_text("health_expenses_range_between").format(round(range_start), round(range_end)) if np.isfinite(range_end) else \
-                     languages.get_text("health_expenses_range_over")   .format(round(range_start))
+        range_text = languages.get_text("health_expenses_range_any")                                if range_start == 0 and not np.isfinite(range_end) else \
+                     languages.get_text("health_expenses_range_less")   .format(round(range_end))   if range_start == 0 else \
+                     languages.get_text("health_expenses_range_over")   .format(round(range_start)) if not np.isfinite(range_end) else \
+                     languages.get_text("health_expenses_range_between").format(round(range_start), round(range_end))
+
         df_comparison.append({
             languages.get_text("colname_spend_per_year"): range_text,
             "🥇 " + languages.get_text("colname_1st_cheapest"): unique_labels[sorted_idx[0]],
@@ -281,6 +284,7 @@ if __name__ == "__main__":
         df_lines      = _make_df_lines(df_points)
         intersections = _make_intersections(df_lines)
 
+        st.write(languages.get_text("comparison_table_explaination"))
         _draw_comparison_table(df_lines, intersections)
 
 

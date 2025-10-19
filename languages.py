@@ -107,6 +107,20 @@ _TRANSLATIONS = {
         Languages.DE: "",
     },
 
+    "health_expenses_range_any": {
+        Languages.EN: "Any amount",
+        Languages.FR: "",
+        Languages.IT: "",
+        Languages.DE: "",
+    },
+
+    "health_expenses_range_less": {
+        Languages.EN: "Less than {}",
+        Languages.FR: "",
+        Languages.IT: "",
+        Languages.DE: "",
+    },
+
     "health_expenses_range_between": {
         Languages.EN: "Between {} and {}",
         Languages.FR: "",
@@ -137,6 +151,15 @@ _TRANSLATIONS = {
 
     "colname_3rd_cheapest": {
         Languages.EN: "3rd Cheapest",
+        Languages.FR: "",
+        Languages.IT: "",
+        Languages.DE: "",
+    },
+
+    "comparison_table_explaination": {
+        Languages.EN: """The table below shows which are the cheapest offers for each range of yearly medical
+                         expenses. If you have an idea of how much you spend each year, you can finally now find
+                         out which one is your best option to save money.""",
         Languages.FR: "",
         Languages.IT: "",
         Languages.DE: "",

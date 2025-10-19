@@ -253,6 +253,7 @@ def _get_y_at_x(df_points, label, x, x_col = "health_expenses", y_col = "money_t
 def _draw_comparison_plot(df_points, intersections, x_col = "health_expenses", y_col = "money_to_insurance", color_col = "label"):
     color_col_ordering = df_points[color_col].unique()
 
+    # Add points to the lines, since Plotly will draw hover legends only on actual points, not on the interpolated parts of the line.
     new_x_coords = set(np.arange(0, df_points[x_col].max(), PLOT_INTERP_STEP)) | set(intersections)
     new_rows = []
 
@@ -266,9 +267,21 @@ def _draw_comparison_plot(df_points, intersections, x_col = "health_expenses", y
     df_points[color_col] = pd.Categorical(df_points[color_col], categories = color_col_ordering)
     df_points = df_points.sort_values([color_col, x_col])
 
-    fig = px.line(df_points, x = x_col, y = y_col, color = color_col)
-    fig.update_layout(hovermode = "x unified")
-    st.plotly_chart(fig)
+    # Draw interactive plots.
+    fig = px.line(df_points, x = x_col, y = y_col, color = color_col,
+                  labels = {x_col    : languages.get_text("health_expenses_plot"),
+                            y_col    : languages.get_text("money_to_insurance_plot"),
+                            color_col: languages.get_text("labels_plot")},
+                  custom_data = ['label'])
+
+    fig.update_traces(hovertemplate = languages.get_text("hover_template"))
+
+    fig.update_layout(hovermode = "x unified",
+                      yaxis = {"fixedrange": True},
+                      xaxis = {"fixedrange": True,
+                               "unifiedhovertitle": {"text": languages.get_text("hover_title")}})
+
+    st.plotly_chart(fig, config = {'displaylogo': False})
 
 
 

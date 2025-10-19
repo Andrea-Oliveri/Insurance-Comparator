@@ -166,6 +166,40 @@ _TRANSLATIONS = {
         Languages.DE: "",
     },
 
+    "health_expenses_plot": {
+        Languages.EN: "Medical Expenses, in CHF per year",
+        Languages.FR: "",
+        Languages.IT: "",
+        Languages.DE: "",
+    },
+
+    "money_to_insurance_plot": {
+        Languages.EN: "Money to Pay Insurance, in CHF per year",
+        Languages.FR: "",
+        Languages.IT: "",
+        Languages.DE: "",
+    },
+
+    "labels_plot": {
+        Languages.EN: "Legend",
+        Languages.FR: "",
+        Languages.IT: "",
+        Languages.DE: "",
+    },
+
+    "hover_title": {
+        Languages.EN: "<b>If medical expenses are %{x} CHF per year,<br>you will pay to the health insurance:</b>",
+        Languages.FR: "",
+        Languages.IT: "",
+        Languages.DE: "",
+    },
+
+    "hover_template": {
+        Languages.EN: "%{customdata}: %{y} CHF per year<extra></extra>",
+        Languages.FR: "",
+        Languages.IT: "",
+        Languages.DE: "",
+    },
 }
 
 

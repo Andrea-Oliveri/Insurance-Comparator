@@ -165,6 +165,14 @@ _TRANSLATIONS = {
         Languages.DE: "",
     },
 
+    "comparison_plot_explaination": {
+        Languages.EN: """This plot shows you how each offer compares at any amount of yearly medical expenses.
+                         The plot is interactive, try it out!""",
+        Languages.FR: "",
+        Languages.IT: "",
+        Languages.DE: "",
+    },
+
 }
 
 

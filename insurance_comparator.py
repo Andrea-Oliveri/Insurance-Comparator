@@ -15,6 +15,7 @@ MAX_CHOICES = 10
 MAX_TEXT_INPUTS_LEN = 20
 MIN_NUM_INPUTS_VALUE = 0
 MAX_NUM_INPUTS_VALUE = 5000
+PLOT_INTERP_STEP = 20
 
 
 def _set_page_config(title, icon):
@@ -252,6 +253,25 @@ def _get_y_at_x(df_lines, label, x):
     return line["slope"] * x + line["intercept"]
 
 
+def _draw_comparison_plot(df_points, df_lines, intersections, x_col = "health_expenses", y_col = "money_to_insurance", color_col = "label"):
+    color_col_ordering = df_points[color_col].unique()
+
+    new_x_coords = set(np.arange(0, df_points[x_col].max(), PLOT_INTERP_STEP)) | set(intersections)
+    new_rows = []
+
+    for label, df_label in df_points.groupby(color_col):
+        for x in new_x_coords - set(df_label[x_col]):
+            new_rows.append({color_col: label, x_col: x, y_col: _get_y_at_x(df_lines, label, x)})
+
+    df_points = pd.concat([df_points, pd.DataFrame(new_rows)], axis = "index", ignore_index = True)
+    df_points[color_col] = pd.Categorical(df_points[color_col], categories = color_col_ordering)
+    df_points = df_points.sort_values([color_col, x_col])
+
+    fig = px.line(df_points, x = x_col, y = y_col, color = color_col)
+    fig.update_layout(hovermode = "x unified")
+    st.plotly_chart(fig)
+
+
 
 if __name__ == "__main__":
     _choose_language()
@@ -287,26 +307,5 @@ if __name__ == "__main__":
         st.write(languages.get_text("comparison_table_explaination"))
         _draw_comparison_table(df_lines, intersections)
 
-
-
-
-
-
-
-
-
-
-
-        new_rows = []
-        for x in np.arange(0, df_points["health_expenses"].max(), 10):
-            for label, df_label in df_points.groupby("label"):
-                if x in df_label["health_expenses"]:
-                    continue
-                new_rows.append({"label": label, "health_expenses": x, "money_to_insurance": _get_y_at_x(df_lines, label, x)})
-        df_points = pd.concat([df_points, pd.DataFrame(new_rows)], axis = "index", ignore_index = True).sort_values(["label", "health_expenses"])
-
-        fig = px.line(df_points, x = "health_expenses", y = "money_to_insurance", color = "label")
-        for x_inter in intersections:
-            fig.add_vline(x = x_inter, line_dash = "dot")
-        fig.update_layout(hovermode = "x unified")
-        st.plotly_chart(fig)
+        st.write(languages.get_text("comparison_plot_explaination"))
+        _draw_comparison_plot(df_points, df_lines, intersections)

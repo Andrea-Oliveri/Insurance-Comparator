@@ -79,13 +79,6 @@ _TRANSLATIONS = {
         Languages.DE: "",
     },
 
-    "compare_button": {
-        Languages.EN: "Compare",
-        Languages.FR: "",
-        Languages.IT: "",
-        Languages.DE: "",
-    },
-
     "error_duplicate_labels": {
         Languages.EN: "Some of your options have the same label: {}. Please change that before starting the comparison.",
         Languages.FR: "",

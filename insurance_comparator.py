@@ -127,6 +127,7 @@ def _insurance_params_section(df):
                 widget_factory = partial(st.number_input,
                                          min_value        = MIN_NUM_INPUTS_VALUE,
                                          max_value        = MAX_NUM_INPUTS_VALUE,
+                                         format           = "%0.2f",
                                          label_visibility = "collapsed")
             else:
                 raise RuntimeError(f"Programming error: unhandled data type {colnames_to_dtypes[col_name]}...")

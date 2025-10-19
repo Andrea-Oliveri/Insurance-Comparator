@@ -213,8 +213,8 @@ def _make_intersections(df_lines):
     return sorted(intersections)
 
 
-def _draw_comparison_table(df_lines, intersections):
-    unique_labels = df_lines["label"].unique()
+def _draw_comparison_table(df_points, intersections):
+    unique_labels = df_points["label"].unique()
 
     df_comparison = []
     for idx in range(len(intersections) + 1):
@@ -223,7 +223,7 @@ def _draw_comparison_table(df_lines, intersections):
         middle      = (range_start + range_end) / 2 if np.isfinite(range_end) else range_start + 1000
 
         # Sort functions by which is smallest in the range.
-        sorted_idx = np.argsort([_get_y_at_x(df_lines, label, x = middle) for label in unique_labels])
+        sorted_idx = np.argsort([_get_y_at_x(df_points, label, x = middle) for label in unique_labels])
 
         # Store the 3 cheapest options.
         range_text = languages.get_text("health_expenses_range_any")                                if range_start == 0 and not np.isfinite(range_end) else \
@@ -245,23 +245,22 @@ def _draw_comparison_table(df_lines, intersections):
     st.table(df_comparison)
 
 
-def _get_y_at_x(df_lines, label, x):
-    line = df_lines[(df_lines["label"] == label) & (df_lines["x_min"] <= x) & (df_lines["x_max"] > x)]
-    if len(line) != 1:
-        raise RuntimeError(f"Programming error: {len(line)} different segments match the requested x...")
-    line = line.iloc[0]
-    return line["slope"] * x + line["intercept"]
+def _get_y_at_x(df_points, label, x, x_col = "health_expenses", y_col = "money_to_insurance"):
+    df_points = df_points[df_points["label"] == label].sort_values(x_col)
+    return np.interp(x, df_points[x_col], df_points[y_col])
 
 
-def _draw_comparison_plot(df_points, df_lines, intersections, x_col = "health_expenses", y_col = "money_to_insurance", color_col = "label"):
+def _draw_comparison_plot(df_points, intersections, x_col = "health_expenses", y_col = "money_to_insurance", color_col = "label"):
     color_col_ordering = df_points[color_col].unique()
 
     new_x_coords = set(np.arange(0, df_points[x_col].max(), PLOT_INTERP_STEP)) | set(intersections)
     new_rows = []
 
     for label, df_label in df_points.groupby(color_col):
-        for x in new_x_coords - set(df_label[x_col]):
-            new_rows.append({color_col: label, x_col: x, y_col: _get_y_at_x(df_lines, label, x)})
+         x = list(new_x_coords - set(df_label[x_col]))
+         y = _get_y_at_x(df_points, label, x)
+         for x_iter, y_iter in zip(x, y):
+             new_rows.append({color_col: label, x_col: x_iter, y_col: y_iter})
 
     df_points = pd.concat([df_points, pd.DataFrame(new_rows)], axis = "index", ignore_index = True)
     df_points[color_col] = pd.Categorical(df_points[color_col], categories = color_col_ordering)
@@ -305,7 +304,7 @@ if __name__ == "__main__":
         intersections = _make_intersections(df_lines)
 
         st.write(languages.get_text("comparison_table_explaination"))
-        _draw_comparison_table(df_lines, intersections)
+        _draw_comparison_table(df_points, intersections)
 
         st.write(languages.get_text("comparison_plot_explaination"))
-        _draw_comparison_plot(df_points, df_lines, intersections)
+        _draw_comparison_plot(df_points, intersections)

@@ -43,7 +43,7 @@ def _set_page_config(title, icon):
 
 def _choose_language():
     # On first run, try infering from locale. The format is fr-FR, fr-CH, ...
-    if not st.session_state.get("language_inferred_from_locale", False):
+    if not st.session_state.get("language_inferred_from_locale", False) and st.context.locale is not None:
         locale_language, _ = st.context.locale.split('-')
         locale_mapping = {"en": languages.Languages.EN,
                           "fr": languages.Languages.FR,

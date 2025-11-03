@@ -6,3 +6,4 @@ hideTopBar = true
 
 [client]
 showErrorDetails = "none"
+toolbarMode = "viewer"

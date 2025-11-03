@@ -41,10 +41,10 @@ _TRANSLATIONS = {
     },
 
     "label": {
-        Languages.EN: "Label of offer",
-        Languages.FR: "Nom de l'offre",
-        Languages.IT: "Nome dell'offerta",
-        Languages.DE: "Bezeichnung des Angebots",
+        Languages.EN: "Name of insurance",
+        Languages.FR: "Nom de l'assurance",
+        Languages.IT: "Nome dell'assicurazione",
+        Languages.DE: "Name der Versicherung",
     },
 
     "cost_per_month": {

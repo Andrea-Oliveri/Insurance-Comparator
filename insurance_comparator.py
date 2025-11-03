@@ -6,16 +6,9 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 
-import languages
+from src import constants
+from src import languages
 
-
-
-MIN_CHOICES = 2
-MAX_CHOICES = 10
-MAX_TEXT_INPUTS_LEN = 20
-MIN_NUM_INPUTS_VALUE = 0.01
-MAX_NUM_INPUTS_VALUE = 5000.
-PLOT_INTERP_STEP = 20
 
 
 def _set_page_config(title, icon):
@@ -28,9 +21,7 @@ def _set_page_config(title, icon):
                 margin-top: -2em;
             }
             .block-container {
-                padding-bottom: 0rem;
-                padding-left: 0rem;
-                padding-right: 0rem;
+                padding-top: 4rem;
             }
             #MainMenu {visibility: hidden;}
             .stAppDeployButton {display:none;}
@@ -60,11 +51,12 @@ def _choose_language():
                         languages.Languages.IT: "🇮🇹 Italiano",
                         languages.Languages.DE: "🇩🇪 Deutsch"}
 
-    language = st.sidebar.selectbox(
-        label       = languages.get_text("choose_language"),
-        options     = language_options.keys(),
-        index       = list(language_options.keys()).index(previous_language),
-        format_func = language_options.get
+    language = st.pills(
+        label          = languages.get_text("choose_language"),
+        options        = language_options.keys(),
+        selection_mode = "single",
+        default        = previous_language,
+        format_func    = language_options.get
     )
 
     languages.set_lang(language)
@@ -119,14 +111,14 @@ def _insurance_params_section(df):
             widget_factory = None
             if colnames_to_dtypes[col_name] == "text":
                 widget_factory = partial(st.text_input,
-                                         max_chars        = MAX_TEXT_INPUTS_LEN,
+                                         max_chars        = constants.MAX_TEXT_INPUTS_LEN,
                                          type             = "default",
                                          autocomplete     = "off",
                                          label_visibility = "collapsed")
             elif colnames_to_dtypes[col_name] == "number":
                 widget_factory = partial(st.number_input,
-                                         min_value        = MIN_NUM_INPUTS_VALUE,
-                                         max_value        = MAX_NUM_INPUTS_VALUE,
+                                         min_value        = constants.MIN_NUM_INPUTS_VALUE,
+                                         max_value        = constants.MAX_NUM_INPUTS_VALUE,
                                          format           = "%0.2f",
                                          label_visibility = "collapsed")
             else:
@@ -139,11 +131,11 @@ def _insurance_params_section(df):
     # Display buttons to delete rows.
     with columns["delete_button"]:
         for idx in df.index:
-            if st.button(":material/delete:", key = f"Button to delete row {idx}", disabled = len(df) <= MIN_CHOICES):
+            if st.button(":material/delete:", key = f"Button to delete row {idx}", disabled = len(df) <= constants.MIN_CHOICES):
                 df = df.loc[df.index != idx]
 
     # Display button to add a row.
-    if st.button(languages.get_text("add_row_button"), icon = "➕", key = f"Button to add a row", disabled = len(df) >= MAX_CHOICES):
+    if st.button(languages.get_text("add_row_button"), icon = "➕", key = f"Button to add a row", disabled = len(df) >= constants.MAX_CHOICES):
         new_row = df.iloc[-1:].copy()
         new_row["label"] = f"Option {len(df) + 1}"
         df = pd.concat([df, new_row], axis = "index", ignore_index = True)
@@ -163,8 +155,8 @@ def _insurance_params_section(df):
     if df[["cost_per_month", "deducible", "excess"]].isna().any(axis = None):
         st.error(languages.get_text("error_required_cols"), icon = "🚨")
         entries_ok = False
-    if len(df) < MIN_CHOICES or len(df) > MAX_CHOICES:
-        st.error(languages.get_text("error_n_choices_out_of_range").format(MIN_CHOICES, MAX_CHOICES), icon = "🚨")
+    if len(df) < constants.MIN_CHOICES or len(df) > constants.MAX_CHOICES:
+        st.error(languages.get_text("error_n_choices_out_of_range").format(constants.MIN_CHOICES, constants.MAX_CHOICES), icon = "🚨")
         entries_ok = False
 
     return df, entries_ok
@@ -274,7 +266,7 @@ def _draw_comparison_plot(df_points, intersections, x_col = "health_expenses", y
     color_col_ordering = df_points[color_col].unique()
 
     # Add points to the lines, since Plotly will draw hover legends only on actual points, not on the interpolated parts of the line.
-    new_x_coords = set(np.arange(0, df_points[x_col].max(), PLOT_INTERP_STEP)) | set(intersections)
+    new_x_coords = set(np.arange(0, df_points[x_col].max(), constants.PLOT_INTERP_STEP)) | set(intersections)
     new_rows = []
 
     for label, df_label in df_points.groupby(color_col):
@@ -310,6 +302,7 @@ if __name__ == "__main__":
 
     _set_page_config(languages.get_text("title"), icon = "💸")
 
+    st.write("\n")
     st.title(languages.get_text("title"))
     st.write(languages.get_text("decription"))
 

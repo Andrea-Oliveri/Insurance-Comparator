@@ -2,6 +2,7 @@ from itertools import combinations
 from functools import partial
 
 import streamlit as st
+import streamlit_analytics
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -298,33 +299,34 @@ def _draw_comparison_plot(df_points, intersections, x_col = "health_expenses", y
 
 
 if __name__ == "__main__":
-    _choose_language()
+    with streamlit_analytics.track(unsafe_password = st.secrets["ANALYTICS_PASSWORD"]):
+        _choose_language()
 
-    _set_page_config(languages.get_text("title"), icon = "💸")
+        _set_page_config(languages.get_text("title"), icon = "💸")
 
-    st.write("\n")
-    st.title(languages.get_text("title"))
-    st.write(languages.get_text("decription"))
+        st.write("\n")
+        st.title(languages.get_text("title"))
+        st.write(languages.get_text("decription"))
 
-    st.session_state["choices"] = st.session_state.get("choices", _get_example_dataframe())
+        st.session_state["choices"] = st.session_state.get("choices", _get_example_dataframe())
 
-    # Create section to edit choices dataframe. Also need to handle Streamlit not updating frontend
-    # if values are changed from session_state after the widget was rendered. This is done with a rerun
-    # if a change is detected.
-    df_old = st.session_state["choices"]
-    df_new, entries_ok = _insurance_params_section(df_old)
-    if not df_old.equals(df_new):
-        st.session_state["choices"] = df_new
-        st.rerun()
-    del df_old, df_new
+        # Create section to edit choices dataframe. Also need to handle Streamlit not updating frontend
+        # if values are changed from session_state after the widget was rendered. This is done with a rerun
+        # if a change is detected.
+        df_old = st.session_state["choices"]
+        df_new, entries_ok = _insurance_params_section(df_old)
+        if not df_old.equals(df_new):
+            st.session_state["choices"] = df_new
+            st.rerun()
+        del df_old, df_new
 
-    st.write("### " + languages.get_text("comparison"))
-    df_points     = _make_df_points(st.session_state["choices"])
-    df_lines      = _make_df_lines(df_points)
-    intersections = _make_intersections(df_lines)
+        st.write("### " + languages.get_text("comparison"))
+        df_points     = _make_df_points(st.session_state["choices"])
+        df_lines      = _make_df_lines(df_points)
+        intersections = _make_intersections(df_lines)
 
-    st.write(languages.get_text("comparison_table_explaination"))
-    _draw_comparison_table(df_points, intersections)
+        st.write(languages.get_text("comparison_table_explaination"))
+        _draw_comparison_table(df_points, intersections)
 
-    st.write(languages.get_text("comparison_plot_explaination"))
-    _draw_comparison_plot(df_points, intersections)
+        st.write(languages.get_text("comparison_plot_explaination"))
+        _draw_comparison_plot(df_points, intersections)

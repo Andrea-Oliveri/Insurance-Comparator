@@ -3,3 +3,6 @@ base = "light"
 
 [ui]
 hideTopBar = true
+
+[client]
+showErrorDetails = "none"

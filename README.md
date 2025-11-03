@@ -4,14 +4,9 @@
 
 The goal of the project is to implement a simple Streamlit app which can help in deciding which LAMal (base) health insurance offer is most convenient depending on the amount of money you expect to spend in the upcoming year.
 
-
-<center>
-
 <a href="https://lamal-swiss-insurance-comparator.streamlit.app/">
     <img src="https://static.streamlit.io/badges/streamlit_badge_black_white.svg" class="logo" alt="Streamlit App" width=200>
 </a>
-
-</center>
 
 ## Repository Structure
 

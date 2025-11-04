@@ -1,3 +1,4 @@
+import logging
 from itertools import combinations
 from functools import partial
 
@@ -317,34 +318,43 @@ def _draw_comparison_plot(df_points, intersections, x_col = "health_expenses", y
 
 
 if __name__ == "__main__":
-    with streamlit_analytics.track(unsafe_password = st.secrets["ANALYTICS_PASSWORD"]):
-        _choose_language()
+    streamlit_analytics.start_tracking()
 
-        _set_page_config(languages.get_text("title"), icon = "💸")
+    _choose_language()
+    _set_page_config(languages.get_text("title"), icon = "💸")
 
-        st.write("\n")
-        st.title(languages.get_text("title"))
-        st.write(languages.get_text("decription"))
+    st.write("\n")
+    st.title(languages.get_text("title"))
+    st.write(languages.get_text("decription"))
 
-        st.session_state["choices"] = st.session_state.get("choices", _get_example_dataframe())
+    st.session_state["choices"] = st.session_state.get("choices", _get_example_dataframe())
 
-        # Create section to edit choices dataframe. Also need to handle Streamlit not updating frontend
-        # if values are changed from session_state after the widget was rendered. This is done with a rerun
-        # if a change is detected.
-        df_old = st.session_state["choices"]
-        df_new, entries_ok = _insurance_params_section(df_old)
-        if not df_old.equals(df_new):
-            st.session_state["choices"] = df_new
-            st.rerun()
-        del df_old, df_new
+    # Create section to edit choices dataframe. Also need to handle Streamlit not updating frontend
+    # if values are changed from session_state after the widget was rendered. This is done with a rerun
+    # if a change is detected.
+    df_old = st.session_state["choices"]
+    df_new, entries_ok = _insurance_params_section(df_old)
+    if not df_old.equals(df_new):
+        st.session_state["choices"] = df_new
+        st.rerun()
+    del df_old, df_new
 
-        st.write("### " + languages.get_text("comparison"))
-        df_points     = _make_df_points(st.session_state["choices"])
-        df_lines      = _make_df_lines(df_points)
-        intersections = _make_intersections(df_lines)
+    st.write("### " + languages.get_text("comparison"))
+    df_points     = _make_df_points(st.session_state["choices"])
+    df_lines      = _make_df_lines(df_points)
+    intersections = _make_intersections(df_lines)
 
-        st.write(languages.get_text("comparison_table_explaination"))
-        _draw_comparison_table(df_points, intersections)
+    st.write(languages.get_text("comparison_table_explaination"))
+    _draw_comparison_table(df_points, intersections)
 
-        st.write(languages.get_text("comparison_plot_explaination"))
-        _draw_comparison_plot(df_points, intersections)
+    st.write(languages.get_text("comparison_plot_explaination"))
+    _draw_comparison_plot(df_points, intersections)
+
+    # This will stop tracking and display the collected data.
+    # Since it uses a deprecated API, need to silence warning coming from Streamlit when calling it.
+    deprecation_logger = logging.getLogger("streamlit.deprecation_util")
+    deprecation_logger_level = deprecation_logger.getEffectiveLevel()
+    deprecation_logger.setLevel(logging.ERROR)
+    streamlit_analytics.stop_tracking(unsafe_password = st.secrets["ANALYTICS_PASSWORD"])
+    deprecation_logger.setLevel(deprecation_logger_level)
+    del deprecation_logger, deprecation_logger_level

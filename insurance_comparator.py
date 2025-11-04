@@ -95,6 +95,24 @@ def _insurance_params_section(df):
     if missing_keys:
         raise RuntimeError(f"Programming error: variable colnames_to_dtypes has some missing keys: {missing_keys}.")
 
+    # We need to do a bit of CSS hacking to prevent flex layout used by Streamlit columns from wrapping the elements on the same line when
+    # the viewport width gets too small.
+    st.markdown(
+        """
+        <style>
+            div.stHorizontalBlock {
+                display: flex !important;
+                flex-flow: row no-wrap !important;
+                min-width: 45rem;
+            }
+            div.stColumn {
+                flex: 1 1 auto;
+                min-width: 1rem;
+            }
+        </style>
+        """,
+        unsafe_allow_html = True)
+
     # Create streamlit columns, accounting for the fact we want an extra one compared to what is in the dataframe to put a button
     # that deletes the row.
     col_names = list(df.columns) + ["delete_button"]

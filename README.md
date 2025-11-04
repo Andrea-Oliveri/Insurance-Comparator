@@ -1,4 +1,4 @@
-﻿# Swiss Health Insurance Comparator, by Andrea Oliveri
+﻿# Swiss Health Insurance Comparator
 
 ## Project Overview
 
